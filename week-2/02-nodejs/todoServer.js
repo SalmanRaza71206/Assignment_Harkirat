@@ -41,9 +41,134 @@
  */
   const express = require('express');
   const bodyParser = require('body-parser');
-  
   const app = express();
-  
+  const fs = require('fs')
+
   app.use(bodyParser.json());
+
+  // GET all the todos
+  app.get('/todos',(req,res)=>{
+    fs.readFile('todos.json','utf-8',(err,data)=>{
+      if(err){
+        res.status(404).send('file not found')
+      }
+      else{
+        res.status(200).json({data})
+      }
+    })
+  })
+  //Get todo by id
+  app.get('/todos/:id',(req,res)=>{
+    const todo_id = req.params.id 
+    fs.readFile('todos.json','utf-8',(err,data)=>{
+      if(err){
+        res.status(404).send('file not found')
+      }
+      else{
+        let todo = data.filter((each_todo)=>{
+              if(todo_id === each_todo.id){
+                 return each_todo
+              }
+
+         })
+         if(todo.length){
+          res.status(200).json({todo})
+         }
+         else{
+          res.status(404).json("Not found")
+         }
+      }
+    })
+  })
+
+  //Create a todo
+  app.post('/todos', (req,res)=>{
+    const newData = req.body
+    fs.readFile('todos.json','utf-8',(err,data)=>{
+        if(err){
+            res.status(404).send("File not Found")
+        }
+        else{
+            // console.log(data)
+           const old_data = JSON.parse(data)
+           newData['id'] = old_data.length + 1;
+            old_data.push(newData)
+            
+            
+            fs.writeFile('todos.json', JSON.stringify(old_data), 'utf-8', (err) => {
+                if (err) {
+                   res.send(404).send("Not able to add in new todo")
+                } else {
+                    res.status(201).send("Todo added successfully")
+                }
+            });
+
+        }
+    })
+    
+  })
+
+  //update todo
+  app.put("/todos/:id", (req,res)=>{
+    const id = req.params.id
+   
+    
+    fs.readFile('todos.json','utf-8',(err,data)=>{
+      if(err){
+        res.status(404).send("File not found")
+      }
+      else{
+        const oldData = JSON.parse(data)
+       const updatedData = oldData.map((todo)=>{
+            if(todo.id == id){
+                const newtodo ={...todo,...req.body}
+                // console.log(newtodo,"new")
+                return newtodo
+            }
+            else{
+                return todo;
+            }
+        })
+     
+        fs.writeFile('todos.json', JSON.stringify(updatedData), 'utf-8', (err) => {
+            if (err) {
+               res.send(404).send("Not able to add in new todo")
+            } else {
+                res.status(201).send("Todo updated successfully")
+            }
+        });
+      }
+    })
+  })
+  
+  // delete the todo
+
+  app.delete("/todos/:id",(req,res)=>{
+    const id = req.params.id
+    fs.readFile('todos.json','utf-8',(err,data)=>{
+        if(err){
+          res.status(404).send('file not found')
+        }
+        else{
+            const oldData = JSON.parse(data) 
+            const RestData = oldData.filter((todo)=>{
+                if(todo.id != id){
+                    return todo;
+                    
+                }
+             })
+           
+             fs.writeFile('todos.json', JSON.stringify(RestData), 'utf-8', (err) => {
+                if (err) {
+                   res.send(404).send("Not able to add in new todo")
+                } else {
+                    res.status(201).send("Todo deleted successfully")
+                }
+            });
+        }
+      })
+
+  })
+
   
   module.exports = app;
